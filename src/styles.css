@@ -5,27 +5,18 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Matsuri Quest — Design System
+ * Theme: 深夜の祭り提灯 × 和モダンゲームUI
+ * Inspired by: 提灯の朱、夜空の藍、屋台の金、墨の黒
  */
 
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: calc(var(--radius) + 12px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -45,91 +36,61 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-ring-offset-background: var(--background);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-lantern: var(--lantern);
+  --color-lantern-glow: var(--lantern-glow);
+  --color-gold: var(--gold);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-rank-s: var(--rank-s);
+  --color-rank-a: var(--rank-a);
+  --color-rank-b: var(--rank-b);
+  --color-rank-c: var(--rank-c);
+
+  --font-display: "Zen Maru Gothic", "Yu Mincho", "Hiragino Mincho ProN", serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", system-ui, sans-serif;
+
+  --shadow-lantern: 0 0 40px -8px oklch(0.62 0.22 28 / 0.55), 0 0 80px -20px oklch(0.7 0.2 50 / 0.35);
+  --shadow-card: 0 1px 0 0 oklch(1 0 0 / 0.05) inset, 0 20px 40px -20px oklch(0 0 0 / 0.6);
+  --gradient-night: radial-gradient(ellipse at top, oklch(0.22 0.06 280) 0%, oklch(0.13 0.04 270) 50%, oklch(0.08 0.02 260) 100%);
+  --gradient-lantern: linear-gradient(135deg, oklch(0.68 0.22 28) 0%, oklch(0.55 0.24 18) 100%);
+  --gradient-gold: linear-gradient(135deg, oklch(0.85 0.16 85) 0%, oklch(0.7 0.18 65) 100%);
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
-  --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
-}
+  --radius: 0.75rem;
 
-.dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  /* Dark by default — 夜祭り */
+  --background: oklch(0.11 0.03 270);
+  --foreground: oklch(0.96 0.02 80);
+  --card: oklch(0.16 0.04 275);
+  --card-foreground: oklch(0.96 0.02 80);
+  --popover: oklch(0.18 0.04 275);
+  --popover-foreground: oklch(0.96 0.02 80);
+  --primary: oklch(0.65 0.23 28);
+  --primary-foreground: oklch(0.98 0.01 80);
+  --secondary: oklch(0.22 0.05 275);
+  --secondary-foreground: oklch(0.96 0.02 80);
+  --muted: oklch(0.2 0.04 275);
+  --muted-foreground: oklch(0.7 0.04 80);
+  --accent: oklch(0.78 0.17 80);
+  --accent-foreground: oklch(0.12 0.03 270);
+  --destructive: oklch(0.6 0.25 25);
+  --destructive-foreground: oklch(0.98 0.01 80);
+  --border: oklch(0.28 0.04 275);
+  --input: oklch(0.22 0.04 275);
+  --ring: oklch(0.65 0.23 28);
+
+  --lantern: oklch(0.65 0.23 28);
+  --lantern-glow: oklch(0.75 0.2 45);
+  --gold: oklch(0.82 0.16 85);
+  --ink: oklch(0.13 0.03 270);
+  --paper: oklch(0.96 0.02 85);
+
+  --rank-s: oklch(0.78 0.18 75);
+  --rank-a: oklch(0.7 0.2 28);
+  --rank-b: oklch(0.65 0.15 220);
+  --rank-c: oklch(0.6 0.04 280);
 }
 
 @layer base {
@@ -137,8 +98,42 @@
     border-color: var(--color-border);
   }
 
-  body {
-    background-color: var(--color-background);
+  html, body {
+    font-family: var(--font-body);
+    background: var(--gradient-night);
     color: var(--color-foreground);
+    min-height: 100vh;
   }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Lantern bobbing animation */
+@keyframes lantern-bob {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-6px) rotate(1deg); }
+}
+.lantern-bob { animation: lantern-bob 4s ease-in-out infinite; }
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+.glow-pulse { animation: glow-pulse 2.5s ease-in-out infinite; }
+
+@keyframes ember-rise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-100vh) translateX(20px); opacity: 0; }
+}
+
+.washi-texture {
+  background-image:
+    radial-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px),
+    radial-gradient(oklch(1 0 0 / 0.015) 1px, transparent 1px);
+  background-size: 24px 24px, 48px 48px;
+  background-position: 0 0, 12px 12px;
 }
