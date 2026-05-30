@@ -1,29 +1,640 @@
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  CATEGORIES,
+  FESTIVALS,
+  type CategoryFilter,
+  type Festival,
+} from "@/data/festivals";
+import {
+  daysUntil,
+  festivalStatus,
+  levelFromXp,
+  loadPlayer,
+  savePlayer,
+  sortByUrgency,
+} from "@/lib/game";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
+      { title: "Matsuri Quest — 日本のお祭り攻略マップ" },
+      {
+        name: "description",
+        content:
+          "全国のお祭り・伝統行事を“クエスト”として攻略していくゲーミフィケーション・イベント管理アプリ。",
+      },
+      { property: "og:title", content: "Matsuri Quest — 日本のお祭り攻略マップ" },
+      {
+        property: "og:description",
+        content:
+          "次の祭りまであと何日？ レベルを上げて、四季と土地の物語を巡る旅へ。",
+      },
+    ],
+    links: [
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap",
+      },
     ],
   }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const [player, setPlayer] = useState(() => loadPlayer());
+  const [filter, setFilter] = useState<CategoryFilter>("すべて");
+  const [active, setActive] = useState<Festival | null>(null);
+
+  useEffect(() => savePlayer(player), [player]);
+
+  const conquered = useMemo(
+    () => new Set(player.conqueredIds),
+    [player.conqueredIds],
+  );
+
+  const filtered = useMemo(() => {
+    const list = filter === "すべて" ? FESTIVALS : FESTIVALS.filter((f) => f.category === filter);
+    return sortByUrgency(list);
+  }, [filter]);
+
+  const lvl = levelFromXp(player.xp);
+  const completion = Math.round((conquered.size / FESTIVALS.length) * 100);
+
+  const upcoming30 = FESTIVALS.filter((f) => {
+    const d = daysUntil(f.startDate);
+    return d >= 0 && d <= 30;
+  }).length;
+
+  function toggleConquer(f: Festival) {
+    setPlayer((p) => {
+      const has = p.conqueredIds.includes(f.id);
+      return has
+        ? { conqueredIds: p.conqueredIds.filter((id) => id !== f.id), xp: Math.max(0, p.xp - f.xp) }
+        : { conqueredIds: [...p.conqueredIds, f.id], xp: p.xp + f.xp };
+    });
+  }
+
+  return (
+    <div className="min-h-screen washi-texture relative overflow-hidden">
+      <FloatingEmbers />
+
+      <main className="relative max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-16">
+        <Header />
+
+        <PlayerHud
+          level={lvl.level}
+          into={lvl.into}
+          need={lvl.need}
+          pct={lvl.pct}
+          xp={player.xp}
+          conquered={conquered.size}
+          total={FESTIVALS.length}
+          completion={completion}
+          upcoming30={upcoming30}
+        />
+
+        <NextQuest
+          festival={sortByUrgency(FESTIVALS.filter((f) => daysUntil(f.endDate) >= 0))[0]}
+          conquered={conquered}
+          onConquer={toggleConquer}
+          onOpen={setActive}
+        />
+
+        <CategoryFilters value={filter} onChange={setFilter} />
+
+        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+          {filtered.map((f) => (
+            <FestivalCard
+              key={f.id}
+              festival={f}
+              conquered={conquered.has(f.id)}
+              onOpen={() => setActive(f)}
+              onConquer={() => toggleConquer(f)}
+            />
+          ))}
+        </section>
+
+        <Footer />
+      </main>
+
+      {active && (
+        <FestivalSheet
+          festival={active}
+          conquered={conquered.has(active.id)}
+          onConquer={() => toggleConquer(active)}
+          onClose={() => setActive(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ────────── components ────────── */
+
+function Header() {
+  return (
+    <header className="flex items-center justify-between mb-10">
+      <div className="flex items-center gap-3">
+        <div className="lantern-bob relative">
+          <div
+            className="absolute inset-0 blur-2xl glow-pulse"
+            style={{ background: "var(--gradient-lantern)", borderRadius: "9999px" }}
+          />
+          <div
+            className="relative w-12 h-14 rounded-full grid place-items-center text-2xl"
+            style={{
+              background: "var(--gradient-lantern)",
+              boxShadow: "var(--shadow-lantern)",
+              border: "1px solid oklch(0.4 0.1 30)",
+            }}
+            aria-hidden
+          >
+            <span className="text-white font-bold" style={{ fontFamily: "var(--font-display)" }}>
+              祭
+            </span>
+          </div>
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground leading-none">
+            Matsuri <span style={{ color: "var(--color-gold)" }}>Quest</span>
+          </h1>
+          <p className="text-xs text-muted-foreground mt-1 tracking-widest">
+            日本のお祭り攻略マップ
+          </p>
+        </div>
+      </div>
+
+      <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="w-2 h-2 rounded-full bg-primary glow-pulse" />
+        全 {FESTIVALS.length} クエスト稼働中
+      </div>
+    </header>
+  );
+}
+
+function PlayerHud(props: {
+  level: number;
+  into: number;
+  need: number;
+  pct: number;
+  xp: number;
+  conquered: number;
+  total: number;
+  completion: number;
+  upcoming30: number;
+}) {
+  return (
+    <section
+      className="relative rounded-2xl p-6 sm:p-8 mb-10 overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, oklch(0.18 0.05 275) 0%, oklch(0.14 0.04 270) 100%)",
+        boxShadow: "var(--shadow-card)",
+        border: "1px solid var(--color-border)",
+      }}
+    >
+      <div
+        className="absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl opacity-40"
+        style={{ background: "var(--gradient-lantern)" }}
+        aria-hidden
+      />
+      <div className="relative grid sm:grid-cols-4 gap-6">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">Level</p>
+          <p className="text-5xl font-black mt-1" style={{ color: "var(--color-gold)" }}>
+            {props.level}
+          </p>
+          <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-700"
+              style={{
+                width: `${props.pct}%`,
+                background: "var(--gradient-lantern)",
+                boxShadow: "0 0 12px var(--color-lantern-glow)",
+              }}
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">
+            {props.into} / {props.need} XP
+          </p>
+        </div>
+
+        <HudStat label="総XP" value={props.xp.toLocaleString()} suffix="pt" />
+        <HudStat
+          label="制覇"
+          value={`${props.conquered}`}
+          suffix={`/ ${props.total} 祭`}
+          accent={`${props.completion}%`}
+        />
+        <HudStat label="30日以内に開催" value={`${props.upcoming30}`} suffix="件" pulse />
+      </div>
+    </section>
+  );
+}
+
+function HudStat({
+  label,
+  value,
+  suffix,
+  accent,
+  pulse,
+}: {
+  label: string;
+  value: string;
+  suffix?: string;
+  accent?: string;
+  pulse?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+        {label}
+        {pulse && <span className="w-1.5 h-1.5 rounded-full bg-primary glow-pulse" />}
+      </p>
+      <p className="text-4xl font-black mt-1 tabular-nums">
+        {value}
+        {suffix && <span className="text-sm font-medium text-muted-foreground ml-1.5">{suffix}</span>}
+      </p>
+      {accent && (
+        <p className="text-xs mt-2" style={{ color: "var(--color-gold)" }}>
+          達成率 {accent}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NextQuest({
+  festival,
+  conquered,
+  onConquer,
+  onOpen,
+}: {
+  festival?: Festival;
+  conquered: Set<string>;
+  onConquer: (f: Festival) => void;
+  onOpen: (f: Festival) => void;
+}) {
+  if (!festival) return null;
+  const d = daysUntil(festival.startDate);
+  const status = festivalStatus(festival);
+  const isConq = conquered.has(festival.id);
+
+  return (
+    <section
+      className="relative rounded-2xl p-6 sm:p-8 mb-10 overflow-hidden cursor-pointer group"
+      style={{
+        background: "var(--gradient-lantern)",
+        boxShadow: "var(--shadow-lantern), var(--shadow-card)",
+      }}
+      onClick={() => onOpen(festival)}
+    >
+      <div
+        className="absolute inset-0 opacity-30 mix-blend-overlay washi-texture"
+        aria-hidden
+      />
+      <div className="relative flex items-center justify-between gap-6 flex-wrap">
+        <div className="flex items-center gap-5">
+          <div className="text-6xl sm:text-7xl drop-shadow-lg">{festival.emoji}</div>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.25em] text-white/80 mb-1">
+              ◆ Next Quest ◆
+            </p>
+            <h2 className="text-2xl sm:text-3xl font-black text-white">{festival.name}</h2>
+            <p className="text-sm text-white/85 mt-1">
+              {festival.prefecture} {festival.city} ・ Rank {festival.rank} ・ +{festival.xp} XP
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          {status === "live" ? (
+            <p className="text-3xl font-black text-white">開催中 🔥</p>
+          ) : status === "past" ? (
+            <p className="text-2xl font-bold text-white/70">終了</p>
+          ) : (
+            <>
+              <p className="text-5xl sm:text-6xl font-black text-white tabular-nums leading-none">
+                {d}
+              </p>
+              <p className="text-xs uppercase tracking-widest text-white/80 mt-1">日後に開催</p>
+            </>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onConquer(festival);
+            }}
+            className="mt-3 px-4 py-2 rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: isConq ? "oklch(1 0 0 / 0.9)" : "oklch(0 0 0 / 0.4)",
+              color: isConq ? "var(--color-ink)" : "white",
+              border: "1px solid oklch(1 0 0 / 0.3)",
+            }}
+          >
+            {isConq ? "✓ 制覇済み" : "制覇マーク"}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CategoryFilters({
+  value,
+  onChange,
+}: {
+  value: CategoryFilter;
+  onChange: (v: CategoryFilter) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 mb-2">
+      {CATEGORIES.map((c) => {
+        const active = value === c;
+        return (
+          <button
+            key={c}
+            onClick={() => onChange(c)}
+            className="px-4 py-2 rounded-full text-sm font-bold transition-all"
+            style={{
+              background: active ? "var(--gradient-lantern)" : "var(--color-secondary)",
+              color: active ? "white" : "var(--color-muted-foreground)",
+              boxShadow: active ? "0 0 20px -4px var(--color-lantern-glow)" : "none",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {c}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FestivalCard({
+  festival,
+  conquered,
+  onOpen,
+  onConquer,
+}: {
+  festival: Festival;
+  conquered: boolean;
+  onOpen: () => void;
+  onConquer: () => void;
+}) {
+  const d = daysUntil(festival.startDate);
+  const status = festivalStatus(festival);
+  const rankColor =
+    festival.rank === "S"
+      ? "var(--color-rank-s)"
+      : festival.rank === "A"
+        ? "var(--color-rank-a)"
+        : festival.rank === "B"
+          ? "var(--color-rank-b)"
+          : "var(--color-rank-c)";
+
+  return (
+    <article
+      onClick={onOpen}
+      className="relative rounded-xl p-5 cursor-pointer transition-all hover:-translate-y-1 group"
+      style={{
+        background: "var(--color-card)",
+        border: "1px solid var(--color-border)",
+        boxShadow: "var(--shadow-card)",
+      }}
+    >
+      {conquered && (
+        <div
+          className="absolute top-3 right-3 px-2 py-1 rounded-full text-[10px] font-black tracking-widest"
+          style={{ background: "var(--color-gold)", color: "var(--color-ink)" }}
+        >
+          ✓ CLEAR
+        </div>
+      )}
+
+      <div className="flex items-start justify-between mb-3">
+        <div className="text-4xl">{festival.emoji}</div>
+        <div
+          className="w-9 h-9 rounded-md grid place-items-center font-black text-sm"
+          style={{
+            background: `color-mix(in oklab, ${rankColor} 20%, transparent)`,
+            color: rankColor,
+            border: `1px solid ${rankColor}`,
+          }}
+        >
+          {festival.rank}
+        </div>
+      </div>
+
+      <h3 className="text-lg font-black leading-tight">{festival.name}</h3>
+      <p className="text-xs text-muted-foreground mt-1">
+        {festival.prefecture} {festival.city}
+      </p>
+
+      <div className="flex items-center gap-3 mt-4 text-xs">
+        <span
+          className="px-2 py-1 rounded-md font-medium"
+          style={{
+            background: "var(--color-muted)",
+            color: "var(--color-muted-foreground)",
+          }}
+        >
+          {festival.category}
+        </span>
+        <DifficultyDots level={festival.difficulty} />
+      </div>
+
+      <div className="flex items-end justify-between mt-4 pt-4 border-t border-border">
+        <div>
+          {status === "live" ? (
+            <p className="text-sm font-bold" style={{ color: "var(--color-lantern-glow)" }}>
+              🔥 開催中
+            </p>
+          ) : status === "past" ? (
+            <p className="text-sm text-muted-foreground">終了</p>
+          ) : (
+            <>
+              <p className="text-2xl font-black tabular-nums leading-none">
+                {d}
+                <span className="text-xs text-muted-foreground ml-1">日後</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">{festival.startDate}〜</p>
+            </>
+          )}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onConquer();
+          }}
+          className="text-xs font-bold px-3 py-1.5 rounded-md transition-all"
+          style={{
+            background: conquered ? "var(--color-muted)" : "var(--gradient-lantern)",
+            color: conquered ? "var(--color-muted-foreground)" : "white",
+          }}
+        >
+          {conquered ? "解除" : `+${festival.xp} XP`}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function DifficultyDots({ level }: { level: number }) {
+  return (
+    <span className="flex gap-0.5" aria-label={`難易度 ${level}/5`}>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full"
+          style={{
+            background:
+              i < level ? "var(--color-lantern)" : "var(--color-muted)",
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+function FestivalSheet({
+  festival,
+  conquered,
+  onConquer,
+  onClose,
+}: {
+  festival: Festival;
+  conquered: boolean;
+  onConquer: () => void;
+  onClose: () => void;
+}) {
+  const d = daysUntil(festival.startDate);
   return (
     <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
+      className="fixed inset-0 z-50 grid place-items-center p-4"
+      style={{ background: "oklch(0 0 0 / 0.7)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
     >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+      <div
+        className="relative w-full max-w-lg rounded-2xl p-7 sm:p-9"
+        style={{
+          background: "var(--color-card)",
+          border: "1px solid var(--color-border)",
+          boxShadow: "var(--shadow-card), var(--shadow-lantern)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full text-muted-foreground hover:text-foreground"
+          aria-label="閉じる"
+        >
+          ✕
+        </button>
+
+        <div className="text-6xl mb-4">{festival.emoji}</div>
+        <h3 className="text-2xl font-black">{festival.name}</h3>
+        <p className="text-sm text-muted-foreground">{festival.nameEn}</p>
+
+        <div className="grid grid-cols-3 gap-3 mt-5 text-center">
+          <Stat label="開催地" value={festival.prefecture} />
+          <Stat label="Rank" value={festival.rank} accent />
+          <Stat label="XP" value={`+${festival.xp}`} />
+        </div>
+
+        <p className="text-sm leading-relaxed mt-5 text-muted-foreground">
+          {festival.description}
+        </p>
+
+        <div
+          className="rounded-lg p-4 mt-5 text-center"
+          style={{ background: "var(--color-muted)" }}
+        >
+          {d >= 0 ? (
+            <>
+              <p className="text-4xl font-black tabular-nums" style={{ color: "var(--color-gold)" }}>
+                {d}<span className="text-base text-muted-foreground ml-1">日後</span>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {festival.startDate} 〜 {festival.endDate}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">過去のお祭り</p>
+          )}
+        </div>
+
+        <button
+          onClick={onConquer}
+          className="w-full mt-5 py-3 rounded-lg font-black tracking-widest text-sm"
+          style={{
+            background: conquered ? "var(--color-muted)" : "var(--gradient-lantern)",
+            color: conquered ? "var(--color-muted-foreground)" : "white",
+            boxShadow: conquered ? "none" : "0 0 24px -6px var(--color-lantern-glow)",
+          }}
+        >
+          {conquered ? "✓ 制覇済み（タップで解除）" : `この祭りを制覇する → +${festival.xp} XP`}
+        </button>
+      </div>
     </div>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div
+      className="rounded-lg p-3"
+      style={{ background: "var(--color-muted)" }}
+    >
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p
+        className="text-base font-black mt-1"
+        style={{ color: accent ? "var(--color-gold)" : "var(--color-foreground)" }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function FloatingEmbers() {
+  // Decorative drifting embers
+  const embers = Array.from({ length: 14 });
+  return (
+    <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+      {embers.map((_, i) => {
+        const left = (i * 73) % 100;
+        const delay = (i * 1.3) % 8;
+        const dur = 8 + ((i * 2) % 10);
+        const size = 3 + (i % 4);
+        return (
+          <span
+            key={i}
+            className="absolute bottom-0 rounded-full"
+            style={{
+              left: `${left}%`,
+              width: size,
+              height: size,
+              background: "var(--color-lantern-glow)",
+              boxShadow: "0 0 12px var(--color-lantern-glow)",
+              animation: `ember-rise ${dur}s linear ${delay}s infinite`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-16 pt-8 border-t border-border text-center text-xs text-muted-foreground">
+      <p>Matsuri Quest — お祭りで日本を旅するゲーミフィケーション・イベント管理</p>
+      <p className="mt-1 opacity-60">Microsoft Agent Hackathon 2026 entry · powered by お祭りDB</p>
+    </footer>
   );
 }
