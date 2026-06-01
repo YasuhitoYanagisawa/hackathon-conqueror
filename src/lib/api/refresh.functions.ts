@@ -3,7 +3,7 @@ import { z } from "zod";
 
 // Lovable AI Gateway: gemini supports built-in google_search grounding.
 const GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash";
+const MODEL = "google/gemini-3-flash-preview";
 
 const InputSchema = z.object({
   id: z.string().min(1).max(64),
