@@ -51,16 +51,27 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { data: FESTIVALS, isLoading, error } = useFestivals();
+  const { data: rawFestivals, isLoading, error } = useFestivals();
   const [player, setPlayer] = useState(() => loadPlayer());
   const [filter, setFilter] = useState<CategoryFilter>("すべて");
   const [query, setQuery] = useState("");
   const [pref, setPref] = useState<string>("すべて");
   const [page, setPage] = useState(1);
   const [active, setActive] = useState<Festival | null>(null);
+  const [sortMode, setSortMode] = useState<"urgency" | "nearby">("urgency");
+  // Bump to force re-render after overrides change (Gemini refresh).
+  const [overrideTick, setOverrideTick] = useState(0);
+  const geo = useGeo();
+
+  const FESTIVALS = useMemo(
+    () => (rawFestivals ? applyOverrides(rawFestivals) : undefined),
+    // overrideTick intentionally triggers re-apply
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawFestivals, overrideTick],
+  );
 
   useEffect(() => savePlayer(player), [player]);
-  useEffect(() => setPage(1), [filter, query, pref]);
+  useEffect(() => setPage(1), [filter, query, pref, sortMode]);
 
   const conquered = useMemo(
     () => new Set(player.conqueredIds),
@@ -89,8 +100,9 @@ function Index() {
         return false;
       return true;
     });
+    if (sortMode === "nearby" && geo.pos) return sortByDistance(list, geo.pos);
     return sortByUrgency(list);
-  }, [FESTIVALS, filter, pref, query]);
+  }, [FESTIVALS, filter, pref, query, sortMode, geo.pos]);
 
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const lvl = levelFromXp(player.xp);
