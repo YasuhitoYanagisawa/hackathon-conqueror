@@ -540,11 +540,13 @@ function CategoryFilters({
 function FestivalCard({
   festival,
   conquered,
+  distanceKm,
   onOpen,
   onConquer,
 }: {
   festival: Festival;
   conquered: boolean;
+  distanceKm?: number;
   onOpen: () => void;
   onConquer: () => void;
 }) {
