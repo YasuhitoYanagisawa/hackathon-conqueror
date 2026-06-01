@@ -154,11 +154,12 @@ function Index() {
           need={lvl.need}
           pct={lvl.pct}
           xp={player.xp}
-          conquered={conquered.size}
-          total={total}
-          completion={completion}
+          conqueredPrefs={conqueredPrefs.size}
+          prefTotal={PREF_TOTAL}
+          completion={prefCompletion}
           upcoming30={upcoming30}
         />
+
 
         {isLoading && (
           <div className="text-center py-12 text-muted-foreground">
