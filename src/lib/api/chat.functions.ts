@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import process from "node:process";
+
+// ⚠️ ハッカソンデモ用：本来はシークレットに格納すべき
+const AZURE_ENDPOINT = "https://myresourcename.openai.azure.com";
+const AZURE_API_KEY =
+  "BH16u93PfZx5sjIQSIY6Kx6VF7r13ZtimeGK4EzaeJMNIMdqyolbJQQJ99CEACYeBjFXJ3w3AAABACOG3kjS";
+const AZURE_DEPLOYMENT = "gpt-5.4-mini";
+const AZURE_API_VERSION = "2024-12-01-preview";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -14,20 +20,16 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) {
-      return { reply: "AIキーが未設定です。", error: "no_key" as const };
-    }
+    const url = `${AZURE_ENDPOINT}/openai/deployments/${AZURE_DEPLOYMENT}/chat/completions?api-version=${AZURE_API_VERSION}`;
 
     try {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch(url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          "api-key": AZURE_API_KEY,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
           messages: [
             {
               role: "system",
@@ -36,12 +38,17 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
             },
             ...data.messages,
           ],
+          max_completion_tokens: 800,
         }),
       });
 
       if (!res.ok) {
-        if (res.status === 429) return { reply: "リクエストが多すぎます。少し待って再試行してください。", error: "rate_limit" as const };
-        if (res.status === 402) return { reply: "AIクレジットが不足しています。", error: "payment" as const };
+        const errText = await res.text().catch(() => "");
+        console.error("Azure OpenAI error:", res.status, errText);
+        if (res.status === 429)
+          return { reply: "リクエストが多すぎます。少し待って再試行してください。", error: "rate_limit" as const };
+        if (res.status === 401 || res.status === 403)
+          return { reply: "AI認証に失敗しました（キー/エンドポイント確認）。", error: "auth" as const };
         return { reply: "AIサービスでエラーが発生しました。", error: "upstream" as const };
       }
 
