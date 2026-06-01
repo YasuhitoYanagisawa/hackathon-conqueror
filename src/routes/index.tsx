@@ -3,10 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { MatsuriAIChat } from "@/components/MatsuriAIChat";
 import {
   CATEGORIES,
-  FESTIVALS,
   type CategoryFilter,
   type Festival,
 } from "@/data/festivals";
+import { useFestivals } from "@/hooks/use-festivals";
 import {
   daysUntil,
   festivalStatus,
@@ -16,6 +16,8 @@ import {
   sortByUrgency,
 } from "@/lib/game";
 
+const PAGE_SIZE = 60;
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -23,7 +25,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "全国のお祭り・伝統行事を“クエスト”として攻略していくゲーミフィケーション・イベント管理アプリ。",
+          "全国29,000以上のお祭り・伝統行事を“クエスト”として攻略するゲーミフィケーション・イベント管理アプリ。",
       },
       { property: "og:title", content: "Matsuri Quest — 日本のお祭り攻略マップ" },
       {
@@ -33,10 +35,7 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
-      {
-        rel: "preconnect",
-        href: "https://fonts.googleapis.com",
-      },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap",
@@ -47,29 +46,65 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const { data: FESTIVALS, isLoading, error } = useFestivals();
   const [player, setPlayer] = useState(() => loadPlayer());
   const [filter, setFilter] = useState<CategoryFilter>("すべて");
+  const [query, setQuery] = useState("");
+  const [pref, setPref] = useState<string>("すべて");
+  const [page, setPage] = useState(1);
   const [active, setActive] = useState<Festival | null>(null);
 
   useEffect(() => savePlayer(player), [player]);
+  useEffect(() => setPage(1), [filter, query, pref]);
 
   const conquered = useMemo(
     () => new Set(player.conqueredIds),
     [player.conqueredIds],
   );
 
+  const prefectures = useMemo(() => {
+    if (!FESTIVALS) return ["すべて"];
+    const s = new Set<string>();
+    FESTIVALS.forEach((f) => f.prefecture && s.add(f.prefecture));
+    return ["すべて", ...Array.from(s).sort()];
+  }, [FESTIVALS]);
+
   const filtered = useMemo(() => {
-    const list = filter === "すべて" ? FESTIVALS : FESTIVALS.filter((f) => f.category === filter);
+    if (!FESTIVALS) return [] as Festival[];
+    const q = query.trim().toLowerCase();
+    const list = FESTIVALS.filter((f) => {
+      if (filter !== "すべて" && f.category !== filter) return false;
+      if (pref !== "すべて" && f.prefecture !== pref) return false;
+      if (
+        q &&
+        !`${f.name} ${f.prefecture} ${f.city} ${f.description}`
+          .toLowerCase()
+          .includes(q)
+      )
+        return false;
+      return true;
+    });
     return sortByUrgency(list);
-  }, [filter]);
+  }, [FESTIVALS, filter, pref, query]);
 
+  const visible = filtered.slice(0, page * PAGE_SIZE);
   const lvl = levelFromXp(player.xp);
-  const completion = Math.round((conquered.size / FESTIVALS.length) * 100);
+  const total = FESTIVALS?.length ?? 0;
+  const completion = total ? Math.round((conquered.size / total) * 100) : 0;
+  const upcoming30 = useMemo(() => {
+    if (!FESTIVALS) return 0;
+    return FESTIVALS.filter((f) => {
+      const d = daysUntil(f.startDate);
+      return d >= 0 && d <= 30;
+    }).length;
+  }, [FESTIVALS]);
 
-  const upcoming30 = FESTIVALS.filter((f) => {
-    const d = daysUntil(f.startDate);
-    return d >= 0 && d <= 30;
-  }).length;
+  const nextQuest = useMemo(() => {
+    if (!FESTIVALS) return undefined;
+    return sortByUrgency(
+      FESTIVALS.filter((f) => daysUntil(f.endDate) >= 0 && f.rank === "S"),
+    )[0];
+  }, [FESTIVALS]);
 
   function toggleConquer(f: Festival) {
     setPlayer((p) => {
@@ -85,7 +120,7 @@ function Index() {
       <FloatingEmbers />
 
       <main className="relative max-w-6xl mx-auto px-5 sm:px-8 py-10 sm:py-16">
-        <Header />
+        <Header total={total} />
 
         <PlayerHud
           level={lvl.level}
@@ -94,31 +129,79 @@ function Index() {
           pct={lvl.pct}
           xp={player.xp}
           conquered={conquered.size}
-          total={FESTIVALS.length}
+          total={total}
           completion={completion}
           upcoming30={upcoming30}
         />
 
-        <NextQuest
-          festival={sortByUrgency(FESTIVALS.filter((f) => daysUntil(f.endDate) >= 0))[0]}
-          conquered={conquered}
-          onConquer={toggleConquer}
-          onOpen={setActive}
-        />
+        {isLoading && (
+          <div className="text-center py-12 text-muted-foreground">
+            29,000件のお祭りDBを読み込み中…
+          </div>
+        )}
+        {error && (
+          <div className="text-center py-12 text-destructive">
+            DB読み込みに失敗しました
+          </div>
+        )}
 
-        <CategoryFilters value={filter} onChange={setFilter} />
+        {!isLoading && !error && FESTIVALS && (
+          <>
+            {nextQuest && (
+              <NextQuest
+                festival={nextQuest}
+                conquered={conquered}
+                onConquer={toggleConquer}
+                onOpen={setActive}
+              />
+            )}
 
-        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mt-6">
-          {filtered.map((f) => (
-            <FestivalCard
-              key={f.id}
-              festival={f}
-              conquered={conquered.has(f.id)}
-              onOpen={() => setActive(f)}
-              onConquer={() => toggleConquer(f)}
+            <SearchBar
+              query={query}
+              onQuery={setQuery}
+              pref={pref}
+              onPref={setPref}
+              prefs={prefectures}
+              count={filtered.length}
             />
-          ))}
-        </section>
+
+            <CategoryFilters value={filter} onChange={setFilter} />
+
+            <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+              {visible.map((f) => (
+                <FestivalCard
+                  key={f.id}
+                  festival={f}
+                  conquered={conquered.has(f.id)}
+                  onOpen={() => setActive(f)}
+                  onConquer={() => toggleConquer(f)}
+                />
+              ))}
+            </section>
+
+            {visible.length < filtered.length && (
+              <div className="text-center mt-8">
+                <button
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-6 py-3 rounded-full text-sm font-bold"
+                  style={{
+                    background: "var(--gradient-lantern)",
+                    color: "white",
+                    boxShadow: "0 0 20px -6px var(--color-lantern-glow)",
+                  }}
+                >
+                  さらに表示（残り {(filtered.length - visible.length).toLocaleString()} 件）
+                </button>
+              </div>
+            )}
+
+            {filtered.length === 0 && (
+              <p className="text-center text-muted-foreground py-12">
+                該当するお祭りが見つかりません
+              </p>
+            )}
+          </>
+        )}
 
         <Footer />
       </main>
@@ -139,7 +222,49 @@ function Index() {
 
 /* ────────── components ────────── */
 
-function Header() {
+function SearchBar({
+  query,
+  onQuery,
+  pref,
+  onPref,
+  prefs,
+  count,
+}: {
+  query: string;
+  onQuery: (v: string) => void;
+  pref: string;
+  onPref: (v: string) => void;
+  prefs: string[];
+  count: number;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => onQuery(e.target.value)}
+        placeholder="祭名・地域・キーワードで検索…"
+        className="flex-1 px-4 py-3 rounded-xl text-sm bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+      <select
+        value={pref}
+        onChange={(e) => onPref(e.target.value)}
+        className="px-4 py-3 rounded-xl text-sm bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+      >
+        {prefs.map((p) => (
+          <option key={p} value={p}>
+            {p}
+          </option>
+        ))}
+      </select>
+      <div className="px-4 py-3 rounded-xl text-sm bg-muted text-muted-foreground whitespace-nowrap">
+        {count.toLocaleString()} 件
+      </div>
+    </div>
+  );
+}
+
+function Header({ total }: { total: number }) {
   return (
     <header className="flex items-center justify-between mb-10">
       <div className="flex items-center gap-3">
@@ -174,7 +299,7 @@ function Header() {
 
       <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
         <span className="w-2 h-2 rounded-full bg-primary glow-pulse" />
-        全 {FESTIVALS.length} クエスト稼働中
+        全 {total.toLocaleString()} クエスト稼働中
       </div>
     </header>
   );
