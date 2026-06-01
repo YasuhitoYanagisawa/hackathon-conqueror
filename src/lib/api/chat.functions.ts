@@ -1,12 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// ⚠️ ハッカソンデモ用：本来はシークレットに格納すべき
-const AZURE_ENDPOINT = "https://myresourcename.openai.azure.com";
-const AZURE_API_KEY =
-  "BH16u93PfZx5sjIQSIY6Kx6VF7r13ZtimeGK4EzaeJMNIMdqyolbJQQJ99CEACYeBjFXJ3w3AAABACOG3kjS";
-const AZURE_DEPLOYMENT = "gpt-5.4-mini";
-const AZURE_API_VERSION = "2024-12-01-preview";
+const DEFAULT_AZURE_API_VERSION = "2024-12-01-preview";
 
 const MessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -21,7 +16,16 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const url = `${AZURE_ENDPOINT}/openai/deployments/${AZURE_DEPLOYMENT}/chat/completions?api-version=${AZURE_API_VERSION}`;
+    const endpoint = process.env.AZURE_OPENAI_ENDPOINT?.replace(/\/$/, "");
+    const apiKey = process.env.AZURE_OPENAI_API_KEY;
+    const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+    const apiVersion = process.env.AZURE_OPENAI_API_VERSION ?? DEFAULT_AZURE_API_VERSION;
+
+    if (!endpoint || !apiKey || !deployment) {
+      return { reply: "Azure OpenAI の環境変数が未設定です。", error: "config" as const };
+    }
+
+    const url = `${endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
 
     const today = new Date().toISOString().slice(0, 10);
     const systemContent = [
@@ -43,7 +47,7 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
       const res = await fetch(url, {
         method: "POST",
         headers: {
-          "api-key": AZURE_API_KEY,
+          "api-key": apiKey,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({

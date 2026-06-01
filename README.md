@@ -50,7 +50,7 @@
   - Azure OpenAI (gpt-5.4-mini) — チャット
   - Lovable AI Gateway / Google Gemini-3 Flash — Grounding 日程更新
 - **Server Functions**: `createServerFn` (TanStack Start)
-- **Deploy**: Cloudflare Workers / Dockerfile (Azure App Service 対応)
+- **Deploy**: Dockerfile による Azure Container Apps / Azure App Service 対応
 
 ## 📂 主要ファイル
 
@@ -91,7 +91,7 @@ bun run build
 - ✅ Gemini Grounding でリアルタイム情報取得
 - ✅ 29,165件の大規模OSSデータベース活用
 - ✅ GPS / 地図 / ゲーミフィケーション の三本柱
-- ✅ Dockerfile による Azure App Service デプロイ対応 (`AZURE_DEPLOY.md`)
+- ✅ Dockerfile による Azure Container Apps デプロイ対応 (`AZURE_DEPLOY.md`)
 - ✅ レスポンシブUI (デスクトップ/タブレット/モバイル)
 
 ## 🙏 クレジット
