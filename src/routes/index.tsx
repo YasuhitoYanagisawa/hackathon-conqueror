@@ -247,6 +247,69 @@ function Index() {
 
 /* ────────── components ────────── */
 
+function GeoToolbar({
+  geo,
+  sortMode,
+  onSortMode,
+}: {
+  geo: ReturnType<typeof useGeo>;
+  sortMode: "urgency" | "nearby";
+  onSortMode: (m: "urgency" | "nearby") => void;
+}) {
+  return (
+    <div className="flex items-center flex-wrap gap-2 mb-4 p-3 rounded-xl border border-border bg-card/50">
+      {!geo.pos ? (
+        <button
+          onClick={geo.request}
+          disabled={geo.loading}
+          className="px-3 py-2 rounded-lg text-xs font-bold text-white disabled:opacity-50"
+          style={{ background: "var(--gradient-lantern)" }}
+        >
+          {geo.loading ? "📍 取得中…" : "📍 現在地から探す"}
+        </button>
+      ) : (
+        <>
+          <span className="text-xs text-muted-foreground">
+            📍 {geo.pos.lat.toFixed(2)}, {geo.pos.lng.toFixed(2)}
+          </span>
+          <button
+            onClick={() => onSortMode("urgency")}
+            className="px-3 py-1.5 rounded-md text-xs font-bold"
+            style={{
+              background: sortMode === "urgency" ? "var(--gradient-lantern)" : "var(--color-secondary)",
+              color: sortMode === "urgency" ? "white" : "var(--color-muted-foreground)",
+            }}
+          >
+            日付順
+          </button>
+          <button
+            onClick={() => onSortMode("nearby")}
+            className="px-3 py-1.5 rounded-md text-xs font-bold"
+            style={{
+              background: sortMode === "nearby" ? "var(--gradient-lantern)" : "var(--color-secondary)",
+              color: sortMode === "nearby" ? "white" : "var(--color-muted-foreground)",
+            }}
+          >
+            近い順
+          </button>
+          <button
+            onClick={geo.clear}
+            className="px-2 py-1.5 rounded-md text-xs bg-muted text-muted-foreground"
+          >
+            位置クリア
+          </button>
+        </>
+      )}
+      {geo.error && (
+        <span className="text-xs text-destructive">{geo.error}</span>
+      )}
+      <span className="ml-auto text-[11px] text-muted-foreground">
+        powered by Geolocation API
+      </span>
+    </div>
+  );
+}
+
 function SearchBar({
   query,
   onQuery,
