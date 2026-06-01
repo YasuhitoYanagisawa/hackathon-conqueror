@@ -322,9 +322,18 @@ function Header({ total }: { total: number }) {
         </div>
       </div>
 
-      <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-        <span className="w-2 h-2 rounded-full bg-primary glow-pulse" />
-        全 {total.toLocaleString()} クエスト稼働中
+      <div className="flex items-center gap-3">
+        <Link
+          to="/map"
+          className="px-3 py-2 rounded-lg text-xs font-bold text-white"
+          style={{ background: "var(--gradient-lantern)" }}
+        >
+          🗺 マップ
+        </Link>
+        <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="w-2 h-2 rounded-full bg-primary glow-pulse" />
+          全 {total.toLocaleString()} クエスト稼働中
+        </div>
       </div>
     </header>
   );
