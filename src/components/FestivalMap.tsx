@@ -84,6 +84,9 @@ export function FestivalMap({
       `<strong>${pref}</strong><br/>年間 ${c.toLocaleString()} 件`,
       { sticky: true, direction: "top", className: "matsuri-tooltip" },
     );
+    layer.on("add", () => {
+      (layer as L.Path).bringToBack();
+    });
     layer.on({
       mouseover: (e) => {
         const l = e.target as L.Path;
