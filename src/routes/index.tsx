@@ -424,9 +424,9 @@ function PlayerHud(props: {
   need: number;
   pct: number;
   xp: number;
-  conqueredPrefs: number;
-  prefTotal: number;
-  completion: number;
+  conqueredTotal: number;
+  total: number;
+  coverage: number;
   upcoming30: number;
 }) {
   return (
@@ -467,16 +467,83 @@ function PlayerHud(props: {
 
         <HudStat label="総XP" value={props.xp.toLocaleString()} suffix="pt" />
         <HudStat
-          label="都道府県制覇"
-          value={`${props.conqueredPrefs}`}
-          suffix={`/ ${props.prefTotal} 県`}
-          accent={`${props.completion}%`}
+          label="全国カバレッジ"
+          value={`${props.conqueredTotal.toLocaleString()}`}
+          suffix={`/ ${props.total.toLocaleString()}`}
+          accent={`${props.coverage}%`}
         />
         <HudStat label="30日以内に開催" value={`${props.upcoming30}`} suffix="件" pulse />
       </div>
     </section>
   );
 }
+
+function PrefectureCoverage({
+  stats,
+}: {
+  stats: Map<string, { total: number; done: number }>;
+}) {
+  const rows = useMemo(() => {
+    const arr = Array.from(stats.entries()).map(([pref, s]) => ({
+      pref,
+      total: s.total,
+      done: s.done,
+      pct: s.total ? (s.done / s.total) * 100 : 0,
+    }));
+    arr.sort((a, b) => b.pct - a.pct || b.done - a.done || a.pref.localeCompare(b.pref, "ja"));
+    return arr;
+  }, [stats]);
+
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? rows : rows.slice(0, 12);
+
+  if (!rows.length) return null;
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-end justify-between mb-3">
+        <h2 className="text-lg font-black">
+          都道府県カバレッジ <span className="text-xs text-muted-foreground font-normal">制覇した祭 / その県の総祭数</span>
+        </h2>
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          {expanded ? "閉じる" : `全${rows.length}県を表示`}
+        </button>
+      </div>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {shown.map((r) => (
+          <div
+            key={r.pref}
+            className="px-3 py-2 rounded-lg bg-card/60 border border-border"
+          >
+            <div className="flex items-baseline justify-between gap-2 text-xs">
+              <span className="font-bold">{r.pref}</span>
+              <span className="tabular-nums text-muted-foreground">
+                {r.done.toLocaleString()} / {r.total.toLocaleString()}
+                <span className="ml-2" style={{ color: "var(--color-gold)" }}>
+                  {r.pct < 10 ? r.pct.toFixed(1) : Math.round(r.pct)}%
+                </span>
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.max(2, r.pct)}%`,
+                  background: r.pct > 0 ? "var(--gradient-lantern)" : "transparent",
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+
 
 
 function HudStat({
