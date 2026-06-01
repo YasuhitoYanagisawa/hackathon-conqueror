@@ -157,11 +157,14 @@ function Index() {
           need={lvl.need}
           pct={lvl.pct}
           xp={player.xp}
-          conqueredPrefs={conqueredPrefs.size}
-          prefTotal={PREF_TOTAL}
-          completion={prefCompletion}
+          conqueredTotal={conquered.size}
+          total={total}
+          coverage={overallCoverage}
           upcoming30={upcoming30}
         />
+
+        {FESTIVALS && <PrefectureCoverage stats={prefStats} />}
+
 
 
         {isLoading && (
