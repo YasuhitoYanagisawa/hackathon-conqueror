@@ -173,6 +173,12 @@ function Index() {
               />
             )}
 
+            <GeoToolbar
+              geo={geo}
+              sortMode={sortMode}
+              onSortMode={setSortMode}
+            />
+
             <SearchBar
               query={query}
               onQuery={setQuery}
@@ -190,6 +196,7 @@ function Index() {
                   key={f.id}
                   festival={f}
                   conquered={conquered.has(f.id)}
+                  distanceKm={geo.pos ? distanceKm(geo.pos, { lat: f.lat, lng: f.lng }) : undefined}
                   onOpen={() => setActive(f)}
                   onConquer={() => toggleConquer(f)}
                 />
