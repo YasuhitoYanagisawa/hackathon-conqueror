@@ -32,6 +32,24 @@ export function xpByPrefecture(list: Festival[]): Record<string, number> {
   return out;
 }
 
+/** Festival counts per prefecture (year-round). */
+export function countByPrefecture(list: Festival[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const f of list) {
+    if (!f.prefecture) continue;
+    out[f.prefecture] = (out[f.prefecture] ?? 0) + 1;
+  }
+  return out;
+}
+
+/** Days until festival start (negative if past). */
+export function daysUntil(isoDate: string): number {
+  const t = Date.parse(isoDate);
+  if (isNaN(t)) return Infinity;
+  return Math.floor((t - Date.now()) / 86400000);
+}
+
+
 /** Map a prefecture's XP to a heat color (0-1 normalized). */
 export function heatColor(t: number): string {
   // cool (blue) → hot (orange/red), matching app's lantern palette
