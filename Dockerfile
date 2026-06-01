@@ -17,8 +17,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Nitro node-server output lives in .output/
-COPY --from=builder /app/.output ./.output
+# Nitro node-server output lives in dist/
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 8080
-CMD ["node", ".output/server/index.mjs"]
+CMD ["node", "dist/server/index.mjs"]
