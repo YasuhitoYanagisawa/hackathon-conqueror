@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useFestivals } from "@/hooks/use-festivals";
 import { useGeo } from "@/hooks/use-geo";
-import { sortByDistance, distanceKm } from "@/lib/geo";
+import { sortByDistance, distanceKm, daysUntil } from "@/lib/geo";
 import { applyOverrides } from "@/lib/overrides";
 import type { Festival } from "@/data/festivals";
 
@@ -10,11 +10,13 @@ const FestivalMap = lazy(() =>
   import("@/components/FestivalMap").then((m) => ({ default: m.FestivalMap })),
 );
 
+const WINDOW_DAYS = 30;
+
 export const Route = createFileRoute("/map")({
   head: () => ({
     meta: [
       { title: "祭マップ — Matsuri Quest" },
-      { name: "description", content: "全国のお祭りを地図で探索。GPSで近隣のクエストを発見、都道府県ごとのXPヒートマップ。" },
+      { name: "description", content: "全国のお祭りを地図で探索。都道府県ごとの年間お祭り数ヒートマップと、直近1か月の開催情報。" },
     ],
   }),
   component: MapPage,
@@ -27,10 +29,19 @@ function MapPage() {
 
   const festivals = useMemo(() => (data ? applyOverrides(data) : []), [data]);
 
+  const upcoming = useMemo(
+    () =>
+      festivals.filter((f) => {
+        const d = daysUntil(f.startDate);
+        return d >= -1 && d <= WINDOW_DAYS;
+      }),
+    [festivals],
+  );
+
   const nearby = useMemo(() => {
-    if (!geo.pos || !festivals.length) return [];
-    return sortByDistance(festivals, geo.pos).slice(0, 15);
-  }, [geo.pos, festivals]);
+    if (!geo.pos || !upcoming.length) return [];
+    return sortByDistance(upcoming, geo.pos).slice(0, 15);
+  }, [geo.pos, upcoming]);
 
   return (
     <div className="min-h-screen washi-texture">
@@ -41,10 +52,11 @@ function MapPage() {
               ← トップへ戻る
             </Link>
             <h1 className="text-2xl sm:text-3xl font-black mt-2">
-              祭マップ <span style={{ color: "var(--color-gold)" }}>{festivals.length.toLocaleString()}</span> 件
+              祭マップ <span style={{ color: "var(--color-gold)" }}>{upcoming.length.toLocaleString()}</span> 件
+              <span className="text-sm font-normal text-muted-foreground ml-2">/ 直近{WINDOW_DAYS}日</span>
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              ヒートマップ＝都道府県ごとの総XP / マーカー色＝ランク (S/A/B/C)
+              色の濃淡＝都道府県の年間お祭り数 (全{festivals.length.toLocaleString()}件ベース) / マーカー＝今後{WINDOW_DAYS}日以内の開催
             </p>
           </div>
 
@@ -84,11 +96,13 @@ function MapPage() {
           <Suspense fallback={<div className="text-center py-20">地図を準備中…</div>}>
             <FestivalMap
               festivals={festivals}
+              upcoming={upcoming}
               userPos={geo.pos}
               onSelect={setSelected}
             />
           </Suspense>
         )}
+
 
         {geo.pos && nearby.length > 0 && (
           <section className="mt-8">
