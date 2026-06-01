@@ -236,6 +236,7 @@ function Index() {
           conquered={conquered.has(active.id)}
           onConquer={() => toggleConquer(active)}
           onClose={() => setActive(null)}
+          onRefreshed={() => setOverrideTick((t) => t + 1)}
         />
       )}
 
