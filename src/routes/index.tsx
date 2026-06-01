@@ -597,6 +597,11 @@ function FestivalCard({
       <h3 className="text-lg font-black leading-tight">{festival.name}</h3>
       <p className="text-xs text-muted-foreground mt-1">
         {festival.prefecture} {festival.city}
+        {typeof distanceKm === "number" && (
+          <span className="ml-2 font-bold" style={{ color: "var(--color-gold)" }}>
+            · {distanceKm < 10 ? distanceKm.toFixed(1) : Math.round(distanceKm)} km
+          </span>
+        )}
       </p>
 
       <div className="flex items-center gap-3 mt-4 text-xs">
