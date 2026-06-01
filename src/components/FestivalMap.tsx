@@ -123,6 +123,7 @@ export function FestivalMap({
 
         {markers.map((f) => (
           <CircleMarker
+            pane="markerPane"
             key={f.id}
             center={[f.lat, f.lng]}
             radius={f.rank === "S" ? 7 : f.rank === "A" ? 5 : 3.5}
@@ -148,6 +149,7 @@ export function FestivalMap({
 
         {userPos && (
           <CircleMarker
+            pane="markerPane"
             center={[userPos.lat, userPos.lng]}
             radius={10}
             pathOptions={{
