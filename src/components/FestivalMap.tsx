@@ -32,6 +32,8 @@ export function FestivalMap({
   const center: [number, number] = userPos ? [userPos.lat, userPos.lng] : [37.5, 138.2];
   const zoom = userPos ? 9 : 5;
 
+  const [showPrefectures, setShowPrefectures] = useState(true);
+
   const counts = useMemo(() => countByPrefecture(festivals), [festivals]);
   const maxCount = useMemo(
     () => Math.max(1, ...Object.values(counts)),
@@ -100,7 +102,13 @@ export function FestivalMap({
   };
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-border" style={{ height: 560 }}>
+    <div className="rounded-2xl overflow-hidden border border-border relative" style={{ height: 560 }}>
+      <button 
+        onClick={() => setShowPrefectures(!showPrefectures)}
+        className="absolute top-4 right-4 z-[1000] bg-background/90 text-foreground px-4 py-2 rounded-md border border-border shadow-md text-sm font-bold hover:bg-muted"
+      >
+        {showPrefectures ? "都道府県エリアを隠す" : "都道府県エリアを表示"}
+      </button>
       <MapContainer
         center={center}
         zoom={zoom}
@@ -112,7 +120,7 @@ export function FestivalMap({
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
-        {geo && (
+        {geo && showPrefectures && (
           <GeoJSON
             key={`geo-${maxCount}`}
             data={geo}
