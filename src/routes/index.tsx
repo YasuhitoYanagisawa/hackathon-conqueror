@@ -675,13 +675,53 @@ function FestivalSheet({
   conquered,
   onConquer,
   onClose,
+  onRefreshed,
 }: {
   festival: Festival;
   conquered: boolean;
   onConquer: () => void;
   onClose: () => void;
+  onRefreshed: () => void;
 }) {
   const d = daysUntil(festival.startDate);
+  const refreshFn = useServerFn(refreshFestivalDate);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState<string | null>(null);
+  const existingOverride = getOverride(festival.id);
+
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshMsg("Geminiが公式情報を検索中…");
+    try {
+      const res = await refreshFn({
+        data: {
+          id: festival.id,
+          name: festival.name,
+          prefecture: festival.prefecture,
+          city: festival.city,
+          schedule: festival.schedule,
+        },
+      });
+      if (res.ok) {
+        setOverride(festival.id, {
+          startDate: res.startDate,
+          endDate: res.endDate,
+          source: res.source,
+          refreshedAt: new Date().toISOString(),
+        });
+        setRefreshMsg(`✓ 更新: ${res.startDate}〜${res.endDate}${res.confidence ? ` (${res.confidence})` : ""}`);
+        onRefreshed();
+      } else {
+        setRefreshMsg(`✗ ${res.error ?? "失敗"}`);
+      }
+    } catch {
+      setRefreshMsg("✗ 通信エラー");
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center p-4"
@@ -689,7 +729,7 @@ function FestivalSheet({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-2xl p-7 sm:p-9"
+        className="relative w-full max-w-lg rounded-2xl p-7 sm:p-9 max-h-[90vh] overflow-y-auto"
         style={{
           background: "var(--color-card)",
           border: "1px solid var(--color-border)",
@@ -735,11 +775,34 @@ function FestivalSheet({
           ) : (
             <p className="text-sm text-muted-foreground">過去のお祭り</p>
           )}
+          {existingOverride && (
+            <p className="text-[10px] text-muted-foreground mt-2 opacity-70">
+              🔄 Gemini更新済 ({new Date(existingOverride.refreshedAt).toLocaleDateString("ja-JP")})
+            </p>
+          )}
         </div>
 
         <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="w-full mt-3 py-2.5 rounded-lg text-xs font-bold border disabled:opacity-50"
+          style={{
+            borderColor: "var(--color-border)",
+            background: "transparent",
+            color: "var(--color-foreground)",
+          }}
+        >
+          {refreshing ? "検索中…" : "🔍 Geminiで最新日程を取得（Grounding）"}
+        </button>
+        {refreshMsg && (
+          <p className="text-[11px] text-center mt-2 text-muted-foreground">
+            {refreshMsg}
+          </p>
+        )}
+
+        <button
           onClick={onConquer}
-          className="w-full mt-5 py-3 rounded-lg font-black tracking-widest text-sm"
+          className="w-full mt-4 py-3 rounded-lg font-black tracking-widest text-sm"
           style={{
             background: conquered ? "var(--color-muted)" : "var(--gradient-lantern)",
             color: conquered ? "var(--color-muted-foreground)" : "white",
