@@ -107,16 +107,19 @@ function Index() {
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const lvl = levelFromXp(player.xp);
   const total = FESTIVALS?.length ?? 0;
-  const PREF_TOTAL = 47;
-  const conqueredPrefs = useMemo(() => {
-    if (!FESTIVALS) return new Set<string>();
-    const s = new Set<string>();
+  const prefStats = useMemo(() => {
+    const m = new Map<string, { total: number; done: number }>();
+    if (!FESTIVALS) return m;
     for (const f of FESTIVALS) {
-      if (conquered.has(f.id) && f.prefecture) s.add(f.prefecture);
+      if (!f.prefecture) continue;
+      const s = m.get(f.prefecture) ?? { total: 0, done: 0 };
+      s.total += 1;
+      if (conquered.has(f.id)) s.done += 1;
+      m.set(f.prefecture, s);
     }
-    return s;
+    return m;
   }, [FESTIVALS, conquered]);
-  const prefCompletion = Math.round((conqueredPrefs.size / PREF_TOTAL) * 100);
+  const overallCoverage = total ? Math.round((conquered.size / total) * 10000) / 100 : 0;
   const upcoming30 = useMemo(() => {
     if (!FESTIVALS) return 0;
     return FESTIVALS.filter((f) => {
