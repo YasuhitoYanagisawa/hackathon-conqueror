@@ -10,14 +10,16 @@ type GeoState = {
 };
 
 export function useGeo() {
-  const [state, setState] = useState<GeoState>(() => {
-    if (typeof window === "undefined") return { pos: null, error: null, loading: false };
+  const [state, setState] = useState<GeoState>({ pos: null, error: null, loading: false });
+
+  // Hydrate from localStorage AFTER mount to avoid SSR/CSR mismatch
+  useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) return { pos: JSON.parse(raw), error: null, loading: false };
+      if (raw) setState({ pos: JSON.parse(raw), error: null, loading: false });
     } catch {}
-    return { pos: null, error: null, loading: false };
-  });
+  }, []);
+
 
   function request() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -47,6 +49,6 @@ export function useGeo() {
     setState({ pos: null, error: null, loading: false });
   }
 
-  useEffect(() => {}, []);
   return { ...state, request, clear };
+
 }
