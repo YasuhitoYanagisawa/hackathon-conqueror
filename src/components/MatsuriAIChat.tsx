@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { askMatsuriAI } from "@/lib/api/chat.functions";
+import { buildRagContext } from "@/lib/rag";
+import type { Festival } from "@/data/festivals";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-export function MatsuriAIChat() {
+export function MatsuriAIChat({ festivals }: { festivals?: Festival[] }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", content: "祭りAIです。気になるお祭りや時期について聞いてください。" },
+    {
+      role: "assistant",
+      content:
+        "祭りAIです。アプリ内のお祭りDB(29,000件超)を参照して回答します。地域名・時期・キーワードを添えて聞いてください。",
+    },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +27,11 @@ export function MatsuriAIChat() {
     setInput("");
     setLoading(true);
     try {
-      const res = await ask({ data: { messages: next } });
+      const context =
+        festivals && festivals.length
+          ? buildRagContext(text, festivals, { limit: 25 })
+          : undefined;
+      const res = await ask({ data: { messages: next, context } });
       setMessages([...next, { role: "assistant", content: res.reply || "…" }]);
     } catch {
       setMessages([...next, { role: "assistant", content: "通信エラーが発生しました。" }]);
@@ -29,6 +39,7 @@ export function MatsuriAIChat() {
       setLoading(false);
     }
   }
+
 
   return (
     <>

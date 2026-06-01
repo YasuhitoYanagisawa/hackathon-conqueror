@@ -256,7 +256,7 @@ function Index() {
         />
       )}
 
-      <MatsuriAIChat />
+      <MatsuriAIChat festivals={FESTIVALS} />
     </div>
   );
 }
