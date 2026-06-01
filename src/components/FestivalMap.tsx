@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Circle } from "react-leaf
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Festival } from "@/data/festivals";
-import { heatColor, xpByPrefecture, type LatLng } from "@/lib/geo";
+import { heatColor, countByPrefecture, type LatLng } from "@/lib/geo";
+
 
 // Prefecture approximate centroids (rough, for heatmap visualization).
 const PREF_CENTROIDS: Record<string, [number, number]> = {
