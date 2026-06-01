@@ -17,10 +17,27 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       messages: z.array(MessageSchema).min(1).max(20),
+      context: z.string().max(12000).optional(),
     }),
   )
   .handler(async ({ data }) => {
     const url = `${AZURE_ENDPOINT}/openai/deployments/${AZURE_DEPLOYMENT}/chat/completions?api-version=${AZURE_API_VERSION}`;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const systemContent = [
+      "あなたは日本のお祭り・伝統行事に詳しいガイド『祭りAI』です。",
+      "簡潔で温かい口調で、日本語で答えてください。",
+      `本日の日付: ${today}`,
+      "",
+      "【重要】以下の『関連お祭りDB抜粋』はアプリ内のお祭りDB(29,000件超)からユーザーの質問に関連するレコードを抽出したものです。",
+      "回答は必ずこのDB抜粋の事実のみに基づいて行い、DBに無い情報は『DBには記載がありません』と明示してください。",
+      "推測や一般論で日付・場所をでっち上げないでください。",
+      "回答時は祭名・都道府県市区町村・開催日を明記してください。",
+      "",
+      "--- 関連お祭りDB抜粋 ---",
+      data.context ?? "(関連データなし)",
+      "--- 抜粋ここまで ---",
+    ].join("\n");
 
     try {
       const res = await fetch(url, {
@@ -31,14 +48,10 @@ export const askMatsuriAI = createServerFn({ method: "POST" })
         },
         body: JSON.stringify({
           messages: [
-            {
-              role: "system",
-              content:
-                "あなたは日本のお祭り・伝統行事に詳しいガイド『祭りAI』です。簡潔で温かい口調で、日本語で答えてください。",
-            },
+            { role: "system", content: systemContent },
             ...data.messages,
           ],
-          max_completion_tokens: 800,
+          max_completion_tokens: 1000,
         }),
       });
 
