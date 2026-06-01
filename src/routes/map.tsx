@@ -106,10 +106,11 @@ function MapPage() {
 
         {geo.pos && nearby.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-lg font-black mb-3">📍 近隣の祭り Top 15</h2>
+            <h2 className="text-lg font-black mb-3">📍 近隣で直近{WINDOW_DAYS}日に開催 Top 15</h2>
             <ul className="grid gap-2 sm:grid-cols-2">
               {nearby.map((f) => {
                 const d = distanceKm(geo.pos!, { lat: f.lat, lng: f.lng });
+                const du = daysUntil(f.startDate);
                 return (
                   <li
                     key={f.id}
@@ -121,7 +122,7 @@ function MapPage() {
                       <div className="min-w-0">
                         <p className="font-bold truncate">{f.name}</p>
                         <p className="text-xs text-muted-foreground truncate">
-                          {f.prefecture} {f.city} · Rank {f.rank}
+                          {f.prefecture} {f.city} · {du <= 0 ? "開催中" : `あと${du}日`}
                         </p>
                       </div>
                     </div>
