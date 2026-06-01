@@ -113,7 +113,7 @@ export function FestivalMap({
             <Popup>
               <strong>{h.pref}</strong>
               <br />
-              総XP: {h.xp.toLocaleString()}
+              年間 {h.count.toLocaleString()} 件
             </Popup>
           </Circle>
         ))}
