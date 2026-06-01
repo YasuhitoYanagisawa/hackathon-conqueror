@@ -3,7 +3,8 @@ import { MapContainer, TileLayer, CircleMarker, Popup, Circle } from "react-leaf
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Festival } from "@/data/festivals";
-import { heatColor, xpByPrefecture, type LatLng } from "@/lib/geo";
+import { heatColor, countByPrefecture, type LatLng } from "@/lib/geo";
+
 
 // Prefecture approximate centroids (rough, for heatmap visualization).
 const PREF_CENTROIDS: Record<string, [number, number]> = {
@@ -37,10 +38,12 @@ function rankColor(rank: Festival["rank"]) {
 
 export function FestivalMap({
   festivals,
+  upcoming,
   userPos,
   onSelect,
 }: {
   festivals: Festival[];
+  upcoming: Festival[];
   userPos: LatLng | null;
   onSelect: (f: Festival) => void;
 }) {
@@ -48,34 +51,34 @@ export function FestivalMap({
   const center: [number, number] = userPos ? [userPos.lat, userPos.lng] : [36.2, 138.2];
   const zoom = userPos ? 9 : 5;
 
-  // Heatmap: total XP per prefecture
+  // Heatmap: festival count per prefecture (year-round)
   const heat = useMemo(() => {
-    const totals = xpByPrefecture(festivals);
+    const totals = countByPrefecture(festivals);
     const max = Math.max(1, ...Object.values(totals));
-    return Object.entries(totals).map(([pref, xp]) => {
+    return Object.entries(totals).map(([pref, count]) => {
       const c = PREF_CENTROIDS[pref];
       if (!c) return null;
-      const t = xp / max;
+      const t = (count as number) / max;
       return {
         pref,
-        xp,
+        count: count as number,
         center: c,
-        radius: 30000 + t * 90000, // 30-120km
+        radius: 25000 + t * 95000, // 25-120km
         color: heatColor(t),
         t,
       };
     }).filter(Boolean) as Array<{
-      pref: string; xp: number; center: [number, number]; radius: number; color: string; t: number;
+      pref: string; count: number; center: [number, number]; radius: number; color: string; t: number;
     }>;
   }, [festivals]);
 
-  // Limit markers for performance (nearest if user pos, else top by XP)
+  // Markers: upcoming festivals only (already filtered by caller)
   const markers = useMemo(() => {
-    const valid = festivals.filter(
-      (f) => typeof f.lat === "number" && typeof f.lng === "number" && !isNaN(f.lat),
-    );
-    return valid.slice(0, 800);
-  }, [festivals]);
+    return upcoming
+      .filter((f) => typeof f.lat === "number" && typeof f.lng === "number" && !isNaN(f.lat))
+      .slice(0, 1500);
+  }, [upcoming]);
+
 
   useEffect(() => {
     // Fix default icon path (not used since we use CircleMarker, but safe)
@@ -110,7 +113,7 @@ export function FestivalMap({
             <Popup>
               <strong>{h.pref}</strong>
               <br />
-              総XP: {h.xp.toLocaleString()}
+              年間 {h.count.toLocaleString()} 件
             </Popup>
           </Circle>
         ))}
