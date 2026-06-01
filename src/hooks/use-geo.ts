@@ -49,6 +49,6 @@ export function useGeo() {
     setState({ pos: null, error: null, loading: false });
   }
 
-  useEffect(() => {}, []);
   return { ...state, request, clear };
+
 }
