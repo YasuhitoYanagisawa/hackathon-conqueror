@@ -418,8 +418,8 @@ function PlayerHud(props: {
   need: number;
   pct: number;
   xp: number;
-  conquered: number;
-  total: number;
+  conqueredPrefs: number;
+  prefTotal: number;
   completion: number;
   upcoming30: number;
 }) {
@@ -461,9 +461,9 @@ function PlayerHud(props: {
 
         <HudStat label="総XP" value={props.xp.toLocaleString()} suffix="pt" />
         <HudStat
-          label="制覇"
-          value={`${props.conquered}`}
-          suffix={`/ ${props.total} 祭`}
+          label="都道府県制覇"
+          value={`${props.conqueredPrefs}`}
+          suffix={`/ ${props.prefTotal} 県`}
           accent={`${props.completion}%`}
         />
         <HudStat label="30日以内に開催" value={`${props.upcoming30}`} suffix="件" pulse />
@@ -471,6 +471,7 @@ function PlayerHud(props: {
     </section>
   );
 }
+
 
 function HudStat({
   label,
