@@ -5,7 +5,7 @@ import { z } from "zod";
 const AZURE_ENDPOINT = "https://myresourcename.openai.azure.com";
 const AZURE_API_KEY =
   "BH16u93PfZx5sjIQSIY6Kx6VF7r13ZtimeGK4EzaeJMNIMdqyolbJQQJ99CEACYeBjFXJ3w3AAABACOG3kjS";
-const AZURE_DEPLOYMENT = "gpt-5.4-pro";
+const AZURE_DEPLOYMENT = "gpt-5.4-mini";
 const AZURE_API_VERSION = "2024-12-01-preview";
 
 const MessageSchema = z.object({
