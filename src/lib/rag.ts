@@ -40,7 +40,7 @@ export function buildRagContext(
 ): string {
   const tokens = tokenize(query);
   const upcomingOnly = opts.upcomingOnly ?? /これから|今後|直近|来月|今月|来週|今週|next|upcoming/i.test(query);
-  const limit = opts.limit ?? 25;
+  const limit = opts.limit ?? 100;
 
   const pool = upcomingOnly
     ? all.filter((f) => daysUntil(f.endDate) >= 0)

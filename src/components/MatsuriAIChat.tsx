@@ -29,7 +29,7 @@ export function MatsuriAIChat({ festivals }: { festivals?: Festival[] }) {
     try {
       const context =
         festivals && festivals.length
-          ? buildRagContext(text, festivals, { limit: 25 })
+          ? buildRagContext(text, festivals, { limit: 100 })
           : undefined;
       const res = await ask({ data: { messages: next, context } });
       setMessages([...next, { role: "assistant", content: res.reply || "…" }]);
