@@ -107,7 +107,16 @@ function Index() {
   const visible = filtered.slice(0, page * PAGE_SIZE);
   const lvl = levelFromXp(player.xp);
   const total = FESTIVALS?.length ?? 0;
-  const completion = total ? Math.round((conquered.size / total) * 100) : 0;
+  const PREF_TOTAL = 47;
+  const conqueredPrefs = useMemo(() => {
+    if (!FESTIVALS) return new Set<string>();
+    const s = new Set<string>();
+    for (const f of FESTIVALS) {
+      if (conquered.has(f.id) && f.prefecture) s.add(f.prefecture);
+    }
+    return s;
+  }, [FESTIVALS, conquered]);
+  const prefCompletion = Math.round((conqueredPrefs.size / PREF_TOTAL) * 100);
   const upcoming30 = useMemo(() => {
     if (!FESTIVALS) return 0;
     return FESTIVALS.filter((f) => {
@@ -145,11 +154,12 @@ function Index() {
           need={lvl.need}
           pct={lvl.pct}
           xp={player.xp}
-          conquered={conquered.size}
-          total={total}
-          completion={completion}
+          conqueredPrefs={conqueredPrefs.size}
+          prefTotal={PREF_TOTAL}
+          completion={prefCompletion}
           upcoming30={upcoming30}
         />
+
 
         {isLoading && (
           <div className="text-center py-12 text-muted-foreground">
@@ -408,8 +418,8 @@ function PlayerHud(props: {
   need: number;
   pct: number;
   xp: number;
-  conquered: number;
-  total: number;
+  conqueredPrefs: number;
+  prefTotal: number;
   completion: number;
   upcoming30: number;
 }) {
@@ -451,9 +461,9 @@ function PlayerHud(props: {
 
         <HudStat label="総XP" value={props.xp.toLocaleString()} suffix="pt" />
         <HudStat
-          label="制覇"
-          value={`${props.conquered}`}
-          suffix={`/ ${props.total} 祭`}
+          label="都道府県制覇"
+          value={`${props.conqueredPrefs}`}
+          suffix={`/ ${props.prefTotal} 県`}
           accent={`${props.completion}%`}
         />
         <HudStat label="30日以内に開催" value={`${props.upcoming30}`} suffix="件" pulse />
@@ -461,6 +471,7 @@ function PlayerHud(props: {
     </section>
   );
 }
+
 
 function HudStat({
   label,
