@@ -88,7 +88,6 @@ export function FestivalMap({
       mouseover: (e) => {
         const l = e.target as L.Path;
         l.setStyle({ weight: 2, color: "#ffd700", fillOpacity: 0.7 });
-        l.bringToFront();
       },
       mouseout: (e) => {
         const l = e.target as L.Path;
