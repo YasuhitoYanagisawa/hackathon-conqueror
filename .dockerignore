@@ -1,0 +1,12 @@
+node_modules
+.output
+.git
+.vscode
+.idea
+dist
+*.log
+.env*
+mem
+.workspace
+.agents
+.claude

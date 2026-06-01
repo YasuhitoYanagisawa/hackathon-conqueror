@@ -6,10 +6,15 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// NITRO_PRESET env var lets us swap the build target.
+// - Default (unset): Cloudflare Workers (Lovable Cloud preview/deploy)
+// - "node-server":    Standalone Node server for Azure Container Apps / App Service
+// - "azure":          Azure Static Web Apps
+const preset = process.env.NITRO_PRESET;
+
 export default defineConfig({
   tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
     server: { entry: "server" },
   },
+  ...(preset ? { nitro: { preset } } : {}),
 });
